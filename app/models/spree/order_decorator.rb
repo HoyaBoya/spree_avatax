@@ -3,8 +3,9 @@ module Spree
 
     Spree::Order.state_machine.after_transition :to => :complete, :do => :commit_avatax_invoice
 
+    ##
+    # This method sends an invoice to Avalara which is stored in their system.
     #TODO-  Avatax Refunds!
-
     #TODO: Findout what this TODO means
     #TODO: Findout why we do this same logic pretty much twice with calculator/avatax.rb
     def commit_avatax_invoice
@@ -64,7 +65,7 @@ module Spree
         logger.debug invoice.to_s
 
         # Indicate this was avataxed
-        update_attribute(:avatax_response_at, Time.now)
+        update_attribute(:avatax_invoice_at, Time.now)
 
         invoice_tax = Avalara.get_tax(invoice)
         
@@ -73,6 +74,7 @@ module Spree
         logger.debug invoice_tax.to_s
 
       rescue => error
+        order.update_attribute(:avatax_invoice_at, nil)
         handle_error(error)
       end
     end

@@ -2,7 +2,7 @@ require 'spec_helper'
 
 describe Spree::Order do
   let(:order) do
-     FactoryGirl.create(:order, ship_address: FactoryGirl.create(:ship_address))
+     FactoryGirl.create(:order_with_line_items, ship_address: FactoryGirl.create(:ship_address))
   end
 
   describe 'commit_avatax_invoice' do
@@ -16,9 +16,9 @@ describe Spree::Order do
       subject
     end
 
-    it 'should set avatax_response_at' do
+    it 'should set avatax_invoice_at' do
       subject
-      order.avatax_response_at.should_not be_nil
+      order.avatax_invoice_at.should_not be_nil
     end
   end
 
@@ -31,8 +31,8 @@ describe Spree::Order do
 
     context 'when there are eligible adjustments' do
       before do
-        order.adjustments << Spree::Adjustment.create!(originator_type: "Spree::PromotionAction", amount: -5.0, order: order, label: 'Promo One')
-        order.adjustments << Spree::Adjustment.create!(originator_type: "Spree::PromotionAction", amount: -10.99, order: order, label: 'Promo Two')
+        order.adjustments << Spree::Adjustment.create!(originator_type: "Spree::PromotionAction", eligible: false, amount: -5.0, order: order, label: 'Promo One')
+        order.adjustments << Spree::Adjustment.create!(originator_type: "Spree::PromotionAction", eligible: true, amount: -10.99, order: order, label: 'Promo Two')
       end
 
       it 'should have a promotion_adjustment_total of 10.99' do

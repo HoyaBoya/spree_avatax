@@ -31,10 +31,6 @@ Gem::Specification.new do |s|
   # Required to test Pagerduty alerting
   s.add_development_dependency 'pagerduty'
 
-  # Required to get bundle exec rake test_app to run clean
-  #s.add_development_dependency 'spree_frontend',  '~> 2.1.2'
-  #s.add_development_dependency 'spree_backend',   '~> 2.1.2'
-
   s.add_development_dependency 'capybara',        '~> 2.1'
   s.add_development_dependency 'coffee-rails'
   s.add_development_dependency 'database_cleaner'
