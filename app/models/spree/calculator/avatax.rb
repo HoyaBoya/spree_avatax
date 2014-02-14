@@ -7,6 +7,8 @@ module Spree
 
       include Spree::Calculator::DefaultTaxMethods
 
+      DEFAULT_TAX_AMOUNT = 0
+
       def self.description
         I18n.t(:avalara_tax)
       end
@@ -31,6 +33,10 @@ module Spree
       end
 
       def avatax_compute_order(order)
+        # Do not calculate tax if no ship address or no line items.
+        return DEFAULT_TAX_AMOUNT if order.ship_address.nil?
+        return DEFAULT_TAX_AMOUNT if order.line_items.nil? || order.line_items.size == 0
+
         # Use Avatax lookup and if fails fall back to default Spree taxation rules
         begin
           Avalara.password = SpreeAvatax::Config.password
@@ -100,7 +106,9 @@ module Spree
           notify(e, order)
 
           order.update_attribute(:avatax_response_at, nil)
-          compute_order(order)
+
+          # Return 0 for and let Finance/Accounting deal with this 
+          DEFAULT_TAX_AMOUNT 
         end
       end
   

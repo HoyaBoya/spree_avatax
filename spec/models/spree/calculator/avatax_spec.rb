@@ -52,53 +52,100 @@ describe Spree::Calculator::Avatax do
     let(:invoice_tax) { double(Avalara::Response, total_tax: 5.00) }
     let(:pager_duty_client) { Pagerduty.new('PAGER DUTY KEY') }  
     let(:order) do
-      FactoryGirl.create(:order, ship_address: FactoryGirl.create(:ship_address))
+      FactoryGirl.create(:order_with_line_items, ship_address: FactoryGirl.create(:ship_address))
     end
 
     subject do
       calculator.send(:avatax_compute_order, order)
     end
 
-    context 'when computing a Spree:Order' do
+    context 'when invalid order' do
       before do
-        Avalara.should_receive(:get_tax).once.and_return(invoice_tax)
+        Avalara.should_receive(:get_tax).never
       end
 
-      it 'should call Avalara.get_tax' do
-        subject
+      context 'when no shipping address' do
+        before do
+          order.ship_address = nil
+        end
+
+        it 'should return 0' do
+          subject.should == 0
+        end
       end
 
-      it 'should set avatax_response_at' do
-        subject
-        order.avatax_response_at.should_not be_nil    
+      context 'when no line items' do
+        before do
+          order.line_items.delete_all
+        end
+
+        it 'should return 0' do
+          subject.should == 0
+        end
       end
     end
 
-    context 'when Avalara::ApiError is raised' do
-      context 'when suppress_api_errors is true' do
+    context 'when valid order' do
+      before(:each) do
+        calculator.should_receive(:rate).at_least(1).and_return(tax_rate)
+      end
+
+      context 'when computing a Spree:Order' do
         before do
-          calculator.should_receive(:rate).once.and_return(tax_rate)
-          Avalara.should_receive(:get_tax).once.and_raise(Avalara::ApiError.new)
-          SpreeAvatax::Config.should_receive(:suppress_api_errors?).and_return(true)
+          Avalara.should_receive(:get_tax).once.and_return(invoice_tax)
         end
 
-        it 'should not notify Honeybadger' do
-          Honeybadger.should_receive(:notify).never
+        it 'should call Avalara.get_tax' do
           subject
         end
 
-        it 'should not notify Pagerduty' do
-          pager_duty_client.should_receive(:trigger).never
-          calculator.pager_duty_client = pager_duty_client
+        it 'should set avatax_response_at' do
           subject
+          order.avatax_response_at.should_not be_nil    
         end
       end
 
-      context 'when suppress_api_errors is false' do
+      context 'when Avalara::ApiError is raised' do
+        context 'when suppress_api_errors is true' do
+          before do
+            Avalara.should_receive(:get_tax).once.and_raise(Avalara::ApiError.new)
+            SpreeAvatax::Config.should_receive(:suppress_api_errors?).and_return(true)
+          end
+
+          it 'should not notify Honeybadger' do
+            Honeybadger.should_receive(:notify).never
+            subject
+          end
+
+          it 'should not notify Pagerduty' do
+            pager_duty_client.should_receive(:trigger).never
+            calculator.pager_duty_client = pager_duty_client
+            subject
+          end
+        end
+
+        context 'when suppress_api_errors is false' do
+          before do
+            Avalara.should_receive(:get_tax).once.and_raise(Avalara::ApiError.new)
+            SpreeAvatax::Config.should_receive(:suppress_api_errors?).and_return(false)
+          end
+
+          it 'should notify Honeybadger' do
+            Honeybadger.should_receive(:notify).once
+            subject
+          end
+
+          it 'should notify Pagerduty' do
+            pager_duty_client.should_receive(:trigger).once
+            calculator.pager_duty_client = pager_duty_client
+            subject
+          end
+        end
+      end
+
+      context 'when StandardError is raised' do
         before do
-          calculator.should_receive(:rate).once.and_return(tax_rate)
-          Avalara.should_receive(:get_tax).once.and_raise(Avalara::ApiError.new)
-          SpreeAvatax::Config.should_receive(:suppress_api_errors?).and_return(false)
+          Avalara.should_receive(:get_tax).once.and_raise('SOME AVALARA ERROR')
         end
 
         it 'should notify Honeybadger' do
@@ -111,31 +158,17 @@ describe Spree::Calculator::Avatax do
           calculator.pager_duty_client = pager_duty_client
           subject
         end
-      end
-    end
 
-    context 'when StandardError is raised' do
-      before do
-        calculator.should_receive(:rate).once.and_return(tax_rate)
-        Avalara.should_receive(:get_tax).once.and_raise('SOME AVALARA ERROR')
-      end
-
-      it 'should notify Honeybadger' do
-        Honeybadger.should_receive(:notify).once
-        subject
-      end
-
-      it 'should notify Pagerduty' do
-        pager_duty_client.should_receive(:trigger).once
-        calculator.pager_duty_client = pager_duty_client
-        subject
+        it 'should return 0 tax' do
+          subject.should == 0
+        end
       end
     end
   end
 
   describe 'avatax_compute_line_item' do
     before do
-      calculator.should_receive(:rate).once.and_return(tax_rate)
+      calculator.should_receive(:rate).at_least(1).and_return(tax_rate)
     end
 
     it 'should invoke Calculator::DefaultTax' do
