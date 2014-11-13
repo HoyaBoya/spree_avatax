@@ -1,4 +1,5 @@
 require 'digest'
+require 'thread'
 
 Spree::Order.class_eval do
 
@@ -34,16 +35,34 @@ Spree::Order.class_eval do
   def avatax_compute_tax
     # Do not calculate if the current cart fingerprint is the same what we have before.
     # Alleviate multiple API calls for the same tax amount.
-    return if avatax_fingerprint == calculate_avatax_fingerprint
+    c = calculate_avatax_fingerprint
+    if self.avatax_fingerprint == calculate_avatax_fingerprint
+      Rails.logger.info "Skipping Avatax due to same fingerprint [#{avatax_fingerprint}]"
+      return
+    end
 
     SpreeAvatax::TaxComputer.new(self).compute
-    update_attributes!(avatax_fingerprint: calculate_avatax_fingerprint)
+    self.update_attributes(avatax_fingerprint: calculate_avatax_fingerprint)
   end
 
   # The fingerprint hash is the # of line items, # of shipments, and order total, and the ship address entity and last update
   def calculate_avatax_fingerprint
     md5 = Digest::MD5.new
-    md5.update "#{self.total}#{self.line_items.count}#{self.shipping_address.try(:updated_at)}"
+
+    address_digest = ""
+    if self.shipping_address
+      h = self.shipping_address.attributes
+      h.delete('created_at')
+      h.delete('updated_at')
+      address_digest = h.values.to_s
+    end
+
+    line_items_digest = line_items.map { |li| "#{li.id}#{li.quantity}#{li.total}" }
+
+    # Remove the tax part of the total digest, else we get the delta of pre / post avatax and calculate 1 extra time
+    total_digest = total - (additional_tax_total || 0.0)
+
+    md5.update "#{total_digest}#{line_items_digest}#{address_digest}"
     md5.hexdigest
   end
 end
