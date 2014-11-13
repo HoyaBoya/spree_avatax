@@ -9,7 +9,6 @@ class SpreeAvatax::TaxComputer
   def initialize(order, options = {})
     @doc_type     = options[:doc_type]     || DEFAULT_DOC_TYPE
     @status_field = options[:status_field] || DEFAULT_STATUS_FIELD
-    @logger       = options[:logger]
 
     @order = order
   end
@@ -20,11 +19,11 @@ class SpreeAvatax::TaxComputer
     reset_tax_attributes(order)
 
     invoice = invoice_for_order
-    logger.debug(invoice)
-    puts invoice      # Trying to get logs on Heroku....:(
+    logger.info ">>> Avalara.get_tax"
+    logger.info invoice
     tax_response = Avalara.get_tax(invoice)
-    logger.debug(tax_response)
-    puts tax_response # Trying to get logs on Heroku....:(
+    logger.info tax_response
+    logger.info "<<< Avalara.get_tax"
 
     order.line_items.each do |line_item|
       tax_amount = tax_response.tax_lines.detect { |tl| tl.line_no == line_item.id.to_s }.try(:tax_calculated)
@@ -98,7 +97,7 @@ class SpreeAvatax::TaxComputer
   end
 
   def invoice_for_order
-    SpreeAvatax::Invoice.new(order, doc_type, logger).invoice
+    SpreeAvatax::Invoice.new(order, doc_type).invoice
   end
 
   def handle_avalara_error(e)
@@ -108,6 +107,6 @@ class SpreeAvatax::TaxComputer
   end
 
   def logger
-    @logger ||= Logger.new("#{Rails.root}/log/avatax.log")
+    Rails.logger
   end
 end

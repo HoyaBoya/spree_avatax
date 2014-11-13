@@ -7,7 +7,7 @@ describe SpreeAvatax::Invoice do
   let(:params) { {doc_type: doc_type} }
   let(:order) { create(:order_with_line_items) }
   let(:tax_rate) { create(:tax_rate, calculator: calculator, zone: ZoneSupport.global_zone) }
-  let(:invoice_instance) { SpreeAvatax::Invoice.new(order, doc_type, Logger.new("/dev/null")) }
+  let(:invoice_instance) { SpreeAvatax::Invoice.new(order, doc_type) }
   let(:tax_category) { create(:tax_category) }
 
   describe "#new" do

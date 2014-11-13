@@ -3,12 +3,11 @@ class SpreeAvatax::Invoice
   DESTINATION_CODE = "1"
   ORIGIN_CODE = "1"
 
-  attr_reader :order, :doc_type, :invoice, :logger
+  attr_reader :order, :doc_type, :invoice
 
-  def initialize(order, doc_type, logger = Logger.new(STDOUT))
+  def initialize(order, doc_type)
     @doc_type = doc_type
     @order = order
-    @logger = logger
     build_invoice
   end
 
@@ -25,7 +24,6 @@ class SpreeAvatax::Invoice
     )
     invoice.addresses = build_invoice_addresses
     invoice.lines = build_invoice_lines
-    logger.debug invoice.to_s
     @invoice = invoice
   end
 
