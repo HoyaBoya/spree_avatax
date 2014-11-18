@@ -17,7 +17,7 @@ Spree::Order.class_eval do
   Spree::Order.state_machine.after_transition :from => :delivery, :do => :avatax_compute_tax
 
   def avataxable?
-    line_items.present? && ship_address.present?
+    line_items.present? && ship_address.present? && !cart?
   end
 
   def promotion_adjustment_total

@@ -39,9 +39,17 @@ describe Spree::Order do
   end
 
   describe "#avataxable?" do
-    it "returns true if there are avataxable line items and a ship address" do
+    it "returns false if there are avataxable line items and a ship address and is cart state" do
       subject.stub(:line_items).and_return([1])
       subject.stub(:ship_address).and_return(double(:as_null_object))
+      subject.stub(:cart?).and_return(true)
+      expect(subject).to_not be_avataxable
+    end
+
+    it "returns true if there are avataxable line items and a ship address and is not cart state" do
+      subject.stub(:line_items).and_return([1])
+      subject.stub(:ship_address).and_return(double(:as_null_object))
+      subject.stub(:cart?).and_return(false)
       expect(subject).to be_avataxable
     end
 
