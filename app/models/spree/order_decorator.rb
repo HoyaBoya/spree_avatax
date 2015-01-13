@@ -27,7 +27,7 @@ Spree::Order.class_eval do
   ##
   # This method sends an invoice to Avalara which is stored in their system.
   def commit_avatax_invoice
-    SpreeAvatax::TaxComputer.new(self, { doc_type: 'SalesInvoice', status_field: :avatax_invoice_at }).compute
+    SpreeAvatax::TaxComputer.new(self, { doc_type: SpreeAvatax::Invoice::SALES_INVOICE, status_field: :avatax_invoice_at }).compute
   end
 
   ##
