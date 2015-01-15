@@ -3,6 +3,9 @@ class SpreeAvatax::Invoice
   DESTINATION_CODE = "1"
   ORIGIN_CODE = "1"
 
+  SALES_INVOICE = 'SalesInvoice'
+  SALES_ORDER   = 'SalesOrder'
+
   attr_reader :order, :doc_type, :invoice
 
   def initialize(order, doc_type)
@@ -20,11 +23,18 @@ class SpreeAvatax::Invoice
       :doc_type => doc_type,
       :company_code => SpreeAvatax::Config.company_code,
       :discount => order.promotion_adjustment_total.round(2).to_f,
-      :doc_code => order.number
+      :doc_code => order.number,
+      :commit => committable?
     )
     invoice.addresses = build_invoice_addresses
     invoice.lines = build_invoice_lines
     @invoice = invoice
+  end
+
+  ##
+  # Determine if we want to commit this invoice to Avatax for tax filings
+  def committable?
+    doc_type == SALES_INVOICE
   end
 
   def build_invoice_addresses

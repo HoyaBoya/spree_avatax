@@ -1,5 +1,5 @@
 class SpreeAvatax::TaxComputer
-  DEFAULT_DOC_TYPE = 'SalesOrder'
+  DEFAULT_DOC_TYPE = SpreeAvatax::Invoice::SALES_ORDER
   DEFAULT_STATUS_FIELD = :avatax_response_at
 
   class MissingTaxAmountError < StandardError; end

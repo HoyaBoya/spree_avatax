@@ -3,12 +3,33 @@ require 'spec_helper'
 describe SpreeAvatax::Invoice do
   # TODO, turns this calculator into a NOOP
   let(:calculator) { Spree::Calculator::DefaultTax.new }
-  let(:doc_type) { "SalesOrder" }
+  let(:doc_type) { SpreeAvatax::Invoice::SALES_ORDER }
   let(:params) { {doc_type: doc_type} }
   let(:order) { create(:order_with_line_items) }
   let(:tax_rate) { create(:tax_rate, calculator: calculator, zone: ZoneSupport.global_zone) }
   let(:invoice_instance) { SpreeAvatax::Invoice.new(order, doc_type) }
   let(:tax_category) { create(:tax_category) }
+
+  describe '.committable?' do
+    before do
+      allow_any_instance_of(SpreeAvatax::Invoice).to receive(:build_invoice)
+    end
+
+    subject { invoice_instance.send(:committable?) }
+
+    context 'when SalesOrder' do
+      it 'should be false' do
+        expect(subject).to eq(false)
+      end
+    end
+
+    context 'when SalesInvoice' do
+      let(:doc_type) { SpreeAvatax::Invoice::SALES_INVOICE }
+      it 'should be true' do
+        expect(subject).to eq(true)
+      end
+    end
+  end
 
   describe "#new" do
     before do
