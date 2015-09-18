@@ -30,14 +30,14 @@ Spree::TaxRate.class_eval do
     end
   end
 
-  def adjust(order, item)
+  def adjust(order, items)
     # We've overridden the class-level TaxRate.adjust so nothing should be calling this code
     raise SpreeAvatax::TaxRateInvalidOperation.new("Spree::TaxRate#adjust should never be called when Avatax is present")
   end
 
   def compute_amount(item)
-    # Avatax tax adjustments should always be in a closed state so Spree should never attempt to call this code
-    raise SpreeAvatax::TaxRateInvalidOperation.new("Spree::TaxRate#compute_amount should never be called when Avatax is present")
+    #This method was changed to no-op instead of raising an error.  This method is called by the admin interface
+    #when a user can manually unlock all adjustments and edit them.  When unlocked this method will be called during an update.
   end
 
   private
