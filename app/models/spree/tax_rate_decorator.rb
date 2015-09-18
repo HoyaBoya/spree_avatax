@@ -38,6 +38,9 @@ Spree::TaxRate.class_eval do
   def compute_amount(item)
     #This method was changed to no-op instead of raising an error.  This method is called by the admin interface
     #when a user can manually unlock all adjustments and edit them.  When unlocked this method will be called during an update.
+
+    #preserve the previously calculated amount so Adjustment#update returns correct value
+    item.amount
   end
 
   private
